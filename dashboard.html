@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MineralStore - Личный кабинет</title>
+    <link rel="icon" type="image/png" href="images/favicon.png">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <h1 class="welcome-text" id="welcomeMessage">Добро пожаловать!</h1>
+    
+    <div class="square2">
+        <div class="square2-top">
+            <button class="logout-btn" onclick="logout()">Выйти</button>
+            <div class="menu" id="categoriesMenu">
+                <button class="category-btn active" data-category="all">Все</button>
+            </div>
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="Поиск товаров..." onkeyup="searchProductsDebounced()">
+            </div>
+            <div class="support-btn" onclick="handleSupportClick()" id="supportBtn"></div>
+        </div>
+        
+        <div class="scrollable-panel" id="productsPanel">
+            <div class="loading">Загрузка товаров...</div>
+        </div>
+    </div>
+
+    <div class="chat-window" id="chatWindow" style="display: none;">
+        <div class="chat-header">
+            <span>Техподдержка</span>
+            <button onclick="closeChat()">×</button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="message system">
+                Здравствуйте! Чем мы можем вам помочь?
+                <div class="message-time">только что</div>
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" class="chat-input" id="chatInput" placeholder="Введите сообщение..." onkeypress="if(event.key==='Enter') sendMessage()">
+            <button class="chat-send-btn" onclick="sendMessage()">➤</button>
+        </div>
+    </div>
+
+    <div class="cart-btn" onclick="showCart()">
+        🛒
+        <span class="cart-count" id="cartCount">0</span>
+    </div>
+
+    <div class="admin-btn" id="adminBtn" onclick="goToAdmin()" style="display: none;">
+        ⚙️
+        <span class="admin-tooltip">Админ-панель</span>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/products.js"></script>
+    <script src="js/support.js"></script>
+    
+    <script>
+        async function handleSupportClick() {
+            const isAdmin = await checkIsAdmin();
+            const supportBtn = document.getElementById('supportBtn');
+            if (isAdmin) {
+                supportBtn.textContent = '📋';
+                supportBtn.classList.add('admin-mode');
+                supportBtn.classList.remove('user-mode');
+                toggleAdminChat();
+            } else {
+                supportBtn.textContent = '🎧';
+                supportBtn.classList.add('user-mode');
+                supportBtn.classList.remove('admin-mode');
+                toggleChat();
+            }
+        }
+
+        async function updateSupportButtonIcon() {
+            const isAdmin = await checkIsAdmin();
+            const supportBtn = document.getElementById('supportBtn');
+            if (supportBtn) {
+                if (isAdmin) {
+                    supportBtn.textContent = '📋';
+                    supportBtn.classList.add('admin-mode');
+                    supportBtn.classList.remove('user-mode');
+                } else {
+                    supportBtn.textContent = '🎧';
+                    supportBtn.classList.add('user-mode');
+                    supportBtn.classList.remove('admin-mode');
+                }
+            }
+        }
+
+        function fadeOut(element, callback) {
+            element.classList.add('fade-out');
+            setTimeout(() => {
+                if (callback) callback();
+            }, 500);
+        }
+
+        function fadeIn(element, text) {
+            element.textContent = text;
+            element.classList.remove('fade-out');
+        }
+
+        window.onload = async function() {
+            try {
+                const user = await checkAuth();
+                if (user) {
+                    const msgElement = document.getElementById('welcomeMessage');
+                    let isAdmin = false;
+                    try {
+                        isAdmin = await checkIsAdmin();
+                        console.log('Is admin:', isAdmin);
+                    } catch (adminError) {
+                        console.error('Admin check failed:', adminError);
+                    }
+                    setTimeout(() => {
+                        fadeOut(msgElement, () => {
+                            fadeIn(msgElement, `Вы вошли как ${user.email}`);
+                            setTimeout(() => {
+                                fadeOut(msgElement, () => {
+                                    if (isAdmin) {
+                                        fadeIn(msgElement, 'Вы вошли как администратор');
+                                        setTimeout(() => {
+                                            fadeOut(msgElement, () => {
+                                                msgElement.style.display = 'none';
+                                            });
+                                        }, 2500);
+                                    } else {
+                                        msgElement.style.display = 'none';
+                                    }
+                                });
+                            }, 2000);
+                        });
+                    }, 2000);
+                    if (typeof loadProducts === 'function') loadProducts('all');
+                    if (isAdmin) {
+                        const adminBtn = document.getElementById('adminBtn');
+                        if (adminBtn) adminBtn.style.display = 'flex';
+                    }
+                    await updateSupportButtonIcon();
+                }
+            } catch (error) {
+                console.error('Error in window.onload:', error);
+            }
+        };
+    </script>
+</body>
+</html>

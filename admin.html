@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MineralStore - Админ-панель</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .admin-container {
+            width: 1200px;
+            max-width: 95%;
+            margin: 20px auto;
+            background: #40E0D0;
+            border-radius: 20px;
+            border: 4px solid #9614c9;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #9614c9;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .admin-title {
+            color: white;
+            font-family: Snell Roundhand, cursive;
+            font-size: 32px;
+            margin: 0;
+        }
+        
+        .admin-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .admin-btn-small {
+            padding: 10px 20px;
+            background: #9614c9;
+            color: white;
+            border: 2px solid white;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        
+        .admin-btn-small:hover {
+            background: #40E0D0;
+            transform: scale(1.05);
+        }
+        
+        .admin-btn-danger {
+            background: #f44336;
+        }
+        
+        .admin-btn-danger:hover {
+            background: #d32f2f;
+        }
+        
+        .admin-table {
+            width: 100%;
+            background: white;
+            border-radius: 15px;
+            border: 3px solid #9614c9;
+            border-collapse: collapse;
+            overflow: hidden;
+        }
+        
+        .admin-table th {
+            background: #9614c9;
+            color: white;
+            padding: 12px;
+            font-family: Snell Roundhand, cursive;
+            font-size: 18px;
+        }
+        
+        .admin-table td {
+            padding: 10px;
+            border-bottom: 1px solid #40E0D0;
+            text-align: center;
+        }
+        
+        .admin-table tr:hover {
+            background: #f0f0f0;
+        }
+        
+        .admin-table img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .admin-table-actions {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+        }
+        
+        .admin-icon-btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+        
+        .edit-btn {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .edit-btn:hover {
+            background: #45a049;
+        }
+        
+        .delete-btn {
+            background: #f44336;
+            color: white;
+        }
+        
+        .delete-btn:hover {
+            background: #d32f2f;
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+        
+        .product-modal {
+            background: white;
+            width: 500px;
+            max-width: 90%;
+            border-radius: 20px;
+            padding: 25px;
+            border: 4px solid #9614c9;
+        }
+        
+        .modal-title {
+            color: #9614c9;
+            font-size: 24px;
+            font-family: Snell Roundhand, cursive;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .modal-form input,
+        .modal-form textarea,
+        .modal-form select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 2px solid #40E0D0;
+            border-radius: 10px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        
+        .modal-form input:focus,
+        .modal-form textarea:focus,
+        .modal-form select:focus {
+            outline: none;
+            border-color: #9614c9;
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            background: #9614c9;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 3px solid white;
+            z-index: 1000;
+        }
+        
+        .back-btn:hover {
+            transform: scale(1.1);
+            background: #40E0D0;
+        }
+        
+        /* Стили для заказов */
+        .orders-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .order-card {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 5px solid #f44336;
+        }
+        
+        .order-card.confirmed {
+            border-left-color: #4CAF50;
+        }
+        
+        .order-card.delivered {
+            border-left-color: #2196F3;
+        }
+        
+        .order-card.cancelled {
+            border-left-color: #999;
+        }
+        
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .order-id {
+            font-weight: bold;
+            color: #9614c9;
+        }
+        
+        .order-date {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .order-info {
+            margin-bottom: 10px;
+        }
+        
+        .order-info-line {
+            margin: 5px 0;
+        }
+        
+        .order-label {
+            font-weight: bold;
+            color: #9614c9;
+        }
+        
+        .order-status-select {
+            margin-left: 10px;
+            padding: 5px 10px;
+            border-radius: 15px;
+            border: 2px solid #9614c9;
+            background: white;
+            cursor: pointer;
+        }
+        
+        .order-summary {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+        
+        .order-summary-title {
+            font-weight: bold;
+            color: #9614c9;
+            cursor: pointer;
+            margin-bottom: 5px;
+        }
+        
+        .order-items {
+            margin-top: 10px;
+            padding-left: 20px;
+        }
+        
+        .order-item {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="back-btn" onclick="location.href='dashboard.html'">
+        ←
+    </div>
+
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1 class="admin-title">Управление товарами</h1>
+            <div class="admin-actions">
+                <button class="admin-btn-small" onclick="showProductsTab()">Товары</button>
+                <button class="admin-btn-small" id="ordersTabBtn" onclick="showOrdersTab()">Заказы</button>
+                <button class="admin-btn-small" onclick="openAddModal()">+ Добавить товар</button>
+                <button class="admin-btn-small" onclick="refreshProducts()">Обновить</button>
+            </div>
+        </div>
+        
+        <!-- Таблица товаров -->
+        <div id="productsContainer">
+            <table class="admin-table" id="productsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Изображение</th>
+                        <th>Название</th>
+                        <th>Категория</th>
+                        <th>Цена</th>
+                        <th>Описание</th>
+                        <th>В наличии</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody id="productsTableBody">
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 50px;">Загрузка товаров...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Список заказов -->
+        <div id="ordersContainer" style="display: none;">
+            <h2 class="admin-title" style="margin-top: 20px;">Заказы</h2>
+            <div class="orders-list" id="ordersList">
+                <div style="text-align: center; padding: 50px;">Загрузка заказов...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для добавления/редактирования -->
+    <div class="modal-overlay" id="productModal">
+        <div class="product-modal">
+            <h2 class="modal-title" id="modalTitle">Добавить товар</h2>
+            <form class="modal-form" id="productForm">
+                <input type="hidden" id="productId">
+                <input type="text" id="productName" placeholder="Название товара" required>
+                <input type="text" id="productCategory" placeholder="Категория" required>
+                <input type="number" id="productPrice" placeholder="Цена" step="0.01" required>
+                <textarea id="productDescription" placeholder="Описание" rows="3" required></textarea>
+                <input type="text" id="productImage" placeholder="URL изображения">
+                <input type="number" id="productStock" placeholder="Количество в наличии" value="10" required>
+                
+                <div class="modal-actions">
+                    <button type="button" class="admin-btn-small" onclick="closeModal()">Отмена</button>
+                    <button type="submit" class="admin-btn-small" style="background: #4CAF50;">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/auth.js"></script>
+    
+    <script>
+        let currentEditId = null;
+        let showOrders = false;
+        
+        window.onload = async function() {
+            const user = await checkAuth();
+            if (!user) return;
+            
+            const isAdmin = await checkIsAdmin();
+            if (!isAdmin) {
+                alert('У вас нет прав доступа к этой странице');
+                window.location.href = 'dashboard.html';
+                return;
+            }
+            
+            loadProductsAdmin();
+        };
+        
+        function showProductsTab() {
+            showOrders = false;
+            document.getElementById('productsContainer').style.display = 'block';
+            document.getElementById('ordersContainer').style.display = 'none';
+        }
+        
+        function showOrdersTab() {
+            showOrders = true;
+            document.getElementById('productsContainer').style.display = 'none';
+            document.getElementById('ordersContainer').style.display = 'block';
+            loadOrders();
+        }
+        
+        async function loadProductsAdmin() {
+            const tbody = document.getElementById('productsTableBody');
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 50px;">Загрузка товаров...</td></tr>';
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('products')
+                    .select('*')
+                    .order('id');
+                    
+                if (error) throw error;
+                
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 50px;">Нет товаров</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = data.map(product => `
+                    <tr>
+                        <td>${product.id}</td>
+                        <td>
+                            ${product.image_url 
+                                ? `<img src="${product.image_url}" alt="${product.name}" onerror="this.src='https://via.placeholder.com/50'">` 
+                                : '—'}
+                        </td>
+                        <td>${product.name}</td>
+                        <td>${product.category || '—'}</td>
+                        <td>${product.price} ₽</td>
+                        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${product.description || '—'}</td>
+                        <td>${product.stock || 0}</td>
+                        <td class="admin-table-actions">
+                            <button class="admin-icon-btn edit-btn" onclick="editProduct(${product.id})">✏️</button>
+                            <button class="admin-icon-btn delete-btn" onclick="deleteProduct(${product.id})">🗑️</button>
+                        </td>
+                    </tr>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error loading products:', error);
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: red;">Ошибка загрузки</td></tr>';
+            }
+        }
+        
+        function refreshProducts() {
+            loadProductsAdmin();
+        }
+        
+        function openAddModal() {
+            currentEditId = null;
+            document.getElementById('modalTitle').textContent = 'Добавить товар';
+            document.getElementById('productForm').reset();
+            document.getElementById('productId').value = '';
+            document.getElementById('productModal').style.display = 'flex';
+        }
+        
+        async function editProduct(id) {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('products')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+                    
+                if (error) throw error;
+                
+                currentEditId = id;
+                document.getElementById('modalTitle').textContent = 'Редактировать товар';
+                document.getElementById('productId').value = data.id;
+                document.getElementById('productName').value = data.name || '';
+                document.getElementById('productCategory').value = data.category || '';
+                document.getElementById('productPrice').value = data.price || '';
+                document.getElementById('productDescription').value = data.description || '';
+                document.getElementById('productImage').value = data.image_url || '';
+                document.getElementById('productStock').value = data.stock || 0;
+                
+                document.getElementById('productModal').style.display = 'flex';
+                
+            } catch (error) {
+                console.error('Error loading product:', error);
+                alert('Ошибка загрузки товара');
+            }
+        }
+        
+        document.getElementById('productForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+    
+            const productData = {
+                name: document.getElementById('productName').value.trim(),
+                category: document.getElementById('productCategory').value.trim() || null,
+                price: parseFloat(document.getElementById('productPrice').value) || 0,
+                description: document.getElementById('productDescription').value.trim() || null,
+                image_url: document.getElementById('productImage').value.trim() || null,
+                stock: parseInt(document.getElementById('productStock').value) || 0
+            };
+    
+            if (!productData.name) {
+                alert('Название товара обязательно');
+                return;
+            }
+    
+            if (productData.price <= 0) {
+                alert('Цена должна быть больше 0');
+                return;
+            }
+    
+            try {
+                let result;
+                
+                if (currentEditId) {
+                    result = await supabaseClient
+                        .from('products')
+                        .update(productData)
+                        .eq('id', currentEditId);
+                } else {
+                    result = await supabaseClient
+                        .from('products')
+                        .insert([productData]);
+                }
+        
+                const { error } = result;
+        
+                if (error) {
+                    alert('Ошибка сохранения: ' + error.message);
+                    return;
+                }
+        
+                closeModal();
+                refreshProducts();
+                showMessagePopup(currentEditId ? 'Товар обновлен' : 'Товар добавлен', 'success');
+
+            } catch (error) {
+                console.error('Exception in save:', error);
+                alert('Ошибка при сохранении: ' + error.message);
+            }
+        });
+        
+        async function deleteProduct(id) {
+            if (!confirm('Вы уверены, что хотите удалить этот товар?')) return;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('products')
+                    .delete()
+                    .eq('id', id);
+                    
+                if (error) throw error;
+                
+                refreshProducts();
+                showMessagePopup('Товар удален', 'success');
+                
+            } catch (error) {
+                console.error('Error deleting product:', error);
+                alert('Ошибка удаления');
+            }
+        }
+        
+        function closeModal() {
+            document.getElementById('productModal').style.display = 'none';
+        }
+        
+        // ========== ЗАКАЗЫ ==========
+        
+        async function loadOrders() {
+            const ordersList = document.getElementById('ordersList');
+            ordersList.innerHTML = '<div style="text-align: center; padding: 20px;">Загрузка заказов...</div>';
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('orders')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                    
+                if (error) throw error;
+                
+                if (!data || data.length === 0) {
+                    ordersList.innerHTML = '<div style="text-align: center; padding: 20px;">Нет заказов</div>';
+                    return;
+                }
+                
+                ordersList.innerHTML = data.map(order => {
+                    let items = [];
+                    try {
+                        items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+                    } catch(e) {
+                        items = [];
+                    }
+                    
+                    const statusClass = order.status === 'pending' ? '' : 
+                                       order.status === 'confirmed' ? 'confirmed' : 
+                                       order.status === 'delivered' ? 'delivered' : 'cancelled';
+                    
+                    return `
+                        <div class="order-card ${statusClass}">
+                            <div class="order-header">
+                                <span class="order-id">Заказ N ${order.id}</span>
+                                <span class="order-date">${new Date(order.created_at).toLocaleString()}</span>
+                            </div>
+                            <div class="order-info">
+                                <div class="order-info-line">
+                                    <span class="order-label">Покупатель:</span> ${order.user_email}
+                                </div>
+                                <div class="order-info-line">
+                                    <span class="order-label">Телефон:</span> ${order.user_phone || 'Не указан'}
+                                </div>
+                                <div class="order-info-line">
+                                    <span class="order-label">Способ связи:</span> ${order.delivery_method === 'call_me' ? 'Перезвоните мне' : 'Я позвоню сам'}
+                                </div>
+                                <div class="order-info-line">
+                                    <span class="order-label">Статус:</span>
+                                    <select class="order-status-select" onchange="updateOrderStatus(${order.id}, this.value)">
+                                        <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Ожидает</option>
+                                        <option value="confirmed" ${order.status === 'confirmed' ? 'selected' : ''}>Подтверждён</option>
+                                        <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Доставлен</option>
+                                        <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Отменён</option>
+                                    </select>
+                                </div>
+                                <div class="order-info-line">
+                                    <span class="order-label">Сумма:</span> ${order.total_amount} ₽
+                                </div>
+                            </div>
+                            <div class="order-summary">
+                                <div class="order-summary-title" onclick="toggleOrderItems(this)">Состав заказа ▼</div>
+                                <div class="order-items" style="display: none;">
+                                    ${items.map(item => `
+                                        <div class="order-item">${item.name} x${item.quantity} = ${item.price * item.quantity} ₽</div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                // Обновляем счетчик на кнопке
+                const pendingCount = data.filter(o => o.status === 'pending').length;
+                const ordersBtn = document.getElementById('ordersTabBtn');
+                if (ordersBtn) {
+                    if (pendingCount > 0) {
+                        ordersBtn.innerHTML = `Заказы (${pendingCount})`;
+                    } else {
+                        ordersBtn.innerHTML = `Заказы`;
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error loading orders:', error);
+                ordersList.innerHTML = '<div style="text-align: center; padding: 20px; color: red;">Ошибка загрузки заказов</div>';
+            }
+        }
+        
+        function toggleOrderItems(element) {
+            const itemsDiv = element.nextElementSibling;
+            if (itemsDiv.style.display === 'none') {
+                itemsDiv.style.display = 'block';
+                element.innerHTML = 'Состав заказа ▲';
+            } else {
+                itemsDiv.style.display = 'none';
+                element.innerHTML = 'Состав заказа ▼';
+            }
+        }
+        
+        async function updateOrderStatus(orderId, newStatus) {
+            try {
+                const { error } = await supabaseClient
+                    .from('orders')
+                    .update({ status: newStatus })
+                    .eq('id', orderId);
+                    
+                if (error) throw error;
+                
+                await loadOrders();
+                showMessagePopup('Статус заказа обновлен', 'success');
+                
+            } catch (error) {
+                console.error('Error updating order:', error);
+                showMessagePopup('Ошибка при обновлении статуса', 'error');
+            }
+        }
+        
+        function showMessagePopup(message, type) {
+            const popup = document.createElement('div');
+            popup.className = `message-popup ${type}`;
+            popup.textContent = message;
+            document.body.appendChild(popup);
+            setTimeout(() => {
+                popup.classList.add('fade-out');
+                setTimeout(() => popup.remove(), 300);
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
