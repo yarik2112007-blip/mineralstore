@@ -37,8 +37,9 @@ async function loadAllProductsForSearch() {
 async function searchProducts() {
     const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
     const panel = document.getElementById('productsPanel');
-    if (!searchTerm) {
-        await loadProducts(currentCategory, true);
+    if (!searchTerm || searchTerm.trim().length === 0) {
+        const panel = document.getElementById('productsPanel');
+        panel.innerHTML = '<div class="loading">Введите текст для поиска</div>';
         return;
     }
     panel.innerHTML = '<div class="loading">Поиск...</div>';
@@ -77,7 +78,6 @@ async function loadProducts(category = 'all', reset = true) {
     currentCategory = category;
     
     try {
-        // Простой запрос без .range() для начала (проверим, есть ли данные)
         let query = supabaseClient.from('products').select('*');
         
         if (category !== 'all') {
