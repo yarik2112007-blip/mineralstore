@@ -4,7 +4,7 @@ let currentPage = 0;
 let isLoading = false;
 let hasMore = true;
 const PAGE_SIZE = 20;
-
+// Основные функции для работы с товарами и корзиной
 const ALL_CATEGORIES = [
     { id: 'all', name: 'Все' },
     { id: 'Кристаллы', name: 'Кристаллы' },
