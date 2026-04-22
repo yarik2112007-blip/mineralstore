@@ -97,7 +97,10 @@ async function sendMessage() {
         showMessagePopup('Введите сообщение', 'error');
         return;
     }
-    
+    if (message.length > 500) {
+        showMessagePopup('Сообщение не должно превышать 500 символов', 'error');
+        return;
+    }
     try {
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) {
