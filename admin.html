@@ -357,6 +357,11 @@
                 <input type="number" id="productPrice" placeholder="Цена" step="0.01" required>
                 <textarea id="productDescription" placeholder="Описание" rows="3" required></textarea>
                 <input type="text" id="productImage" placeholder="URL изображения">
+                <div class="input-group">
+                    <label class="input-label">Загрузить изображение</label>
+                    <input type="file" id="productImageFile" accept="image/jpeg,image/png,image/webp">
+                    <small style="color: #666;">Максимум 5 МБ. Поддерживаются JPEG, PNG, WebP</small>
+                </div>
                 <input type="number" id="productStock" placeholder="Количество в наличии" value="10" required>
                 
                 <div class="modal-actions">
@@ -487,7 +492,7 @@
         
         document.getElementById('productForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-    
+
             const productData = {
                 name: document.getElementById('productName').value.trim(),
                 category: document.getElementById('productCategory').value.trim() || null,
@@ -496,12 +501,12 @@
                 image_url: document.getElementById('productImage').value.trim() || null,
                 stock: parseInt(document.getElementById('productStock').value) || 0
             };
-    
+
             if (!productData.name) {
                 alert('Название товара обязательно');
                 return;
             }
-    
+
             if (productData.price <= 0) {
                 alert('Цена должна быть больше 0');
                 return;
@@ -510,6 +515,45 @@
                 alert('Количество на складе не может быть отрицательным');
                 return;
             }
+
+            const fileInput = document.getElementById('productImageFile');
+            const file = fileInput.files[0];
+            
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Файл слишком большой. Максимум 5 МБ');
+                    return;
+                }
+                
+                if (!file.type.startsWith('image/')) {
+                    alert('Можно загружать только изображения');
+                    return;
+                }
+                
+                try {
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+                    const filePath = `products/${fileName}`;
+                    
+                    const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                        .from('product-images')
+                        .upload(filePath, file);
+                    
+                    if (uploadError) throw uploadError;
+                    
+                    const { data: urlData } = supabaseClient.storage
+                        .from('product-images')
+                        .getPublicUrl(filePath);
+                    
+                    productData.image_url = urlData.publicUrl;
+                    
+                } catch (error) {
+                    console.error('Ошибка загрузки файла:', error);
+                    alert('Ошибка при загрузке изображения: ' + error.message);
+                    return;
+                }
+            }
+
             try {
                 let result;
                 
@@ -523,14 +567,14 @@
                         .from('products')
                         .insert([productData]);
                 }
-        
+
                 const { error } = result;
-        
+
                 if (error) {
                     alert('Ошибка сохранения: ' + error.message);
                     return;
                 }
-        
+
                 closeModal();
                 refreshProducts();
                 showMessagePopup(currentEditId ? 'Товар обновлен' : 'Товар добавлен', 'success');
