@@ -45,6 +45,20 @@
             text-decoration: none;
         }
         .back-btn:hover { background: #40E0D0; }
+        .cancel-order-btn {
+            margin-top: 10px;
+            padding: 8px 20px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .cancel-order-btn:hover {
+            background: #d32f2f;
+            transform: scale(1.02);
+        }
     </style>
 </head>
 <body>
@@ -91,6 +105,9 @@
                     items = typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []);
                 } catch(e) { items = []; }
                 
+                // Кнопка отмены показывается только если статус "Ожидает" (pending)
+                const canCancel = order.status === 'pending';
+                
                 return `
                     <div class="order-card">
                         <div class="order-header">
@@ -103,12 +120,30 @@
                             `).join('')}
                         </div>
                         <div class="order-total">Итого: ${order.total_amount} ₽</div>
-                        <div style="margin-top: 10px; color: #666;">Статус: ${order.status === 'pending' ? '⏳ Ожидает' : order.status === 'confirmed' ? '✅ Подтверждён' : order.status === 'delivered' ? '📦 Доставлен' : '❌ Отменён'}</div>
+                        <div style="margin-top: 10px; color: #666;">Статус: ${order.status === 'pending' ? 'Ожидает' : order.status === 'confirmed' ? 'Подтверждён' : order.status === 'delivered' ? 'Доставлен' : 'Отменён'}</div>
+                        ${canCancel ? `<button class="cancel-order-btn" onclick="cancelOrder(${order.id})" style="margin-top: 10px; padding: 8px 20px; background: #f44336; color: white; border: none; border-radius: 25px; cursor: pointer;">❌ Отменить заказ</button>` : ''}
                     </div>
                 `;
             }).join('');
         }
-        
+        async function cancelOrder(orderId) {
+            if (!confirm('Вы уверены, что хотите отменить этот заказ?')) return;
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('orders')
+                    .update({ status: 'cancelled' })
+                    .eq('id', orderId);
+                
+                if (error) throw error;
+                
+                showMessagePopup('Заказ отменён', 'success');
+                loadOrders(); // Обновляем список
+            } catch (error) {
+                console.error('Ошибка отмены заказа:', error);
+                showMessagePopup('Ошибка при отмене заказа', 'error');
+            }
+        }
         window.onload = loadOrders;
     </script>
 </body>
