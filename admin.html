@@ -356,12 +356,17 @@
                 <input type="text" id="productCategory" placeholder="Категория" required>
                 <input type="number" id="productPrice" placeholder="Цена" step="0.01" required>
                 <textarea id="productDescription" placeholder="Описание" rows="3" required></textarea>
-                <input type="text" id="productImage" placeholder="URL изображения">
+                
+                <!-- Основное фото (старое поле) -->
+                <input type="text" id="productImage" placeholder="URL изображения (основное)">
+                
+                <!-- НОВОЕ: Загрузка нескольких файлов -->
                 <div class="input-group">
-                    <label class="input-label">Загрузить изображение</label>
-                    <input type="file" id="productImageFile" accept="image/jpeg,image/png,image/webp">
-                    <small style="color: #666;">Максимум 5 МБ. Поддерживаются JPEG, PNG, WebP</small>
+                    <label class="input-label">Загрузить изображения (можно несколько)</label>
+                    <input type="file" id="productImageFiles" accept="image/jpeg,image/png,image/webp" multiple>
+                    <small style="color: #666; display: block; margin-top: 5px;">Максимум 5 МБ на файл. Первый файл станет основным фото</small>
                 </div>
+                
                 <input type="number" id="productStock" placeholder="Количество в наличии" value="10" required>
                 
                 <div class="modal-actions">
@@ -490,100 +495,112 @@
             }
         }
         
-        document.getElementById('productForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+document.getElementById('productForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
 
-            const productData = {
-                name: document.getElementById('productName').value.trim(),
-                category: document.getElementById('productCategory').value.trim() || null,
-                price: parseFloat(document.getElementById('productPrice').value) || 0,
-                description: document.getElementById('productDescription').value.trim() || null,
-                image_url: document.getElementById('productImage').value.trim() || null,
-                stock: parseInt(document.getElementById('productStock').value) || 0
-            };
+    const productData = {
+        name: document.getElementById('productName').value.trim(),
+        category: document.getElementById('productCategory').value.trim() || null,
+        price: parseFloat(document.getElementById('productPrice').value) || 0,
+        description: document.getElementById('productDescription').value.trim() || null,
+        image_url: document.getElementById('productImage').value.trim() || null,
+        stock: parseInt(document.getElementById('productStock').value) || 0
+    };
 
-            if (!productData.name) {
-                alert('Название товара обязательно');
-                return;
-            }
+    if (!productData.name) {
+        alert('Название товара обязательно');
+        return;
+    }
 
-            if (productData.price <= 0) {
-                alert('Цена должна быть больше 0');
-                return;
-            }
-            if (productData.stock < 0) {
-                alert('Количество на складе не может быть отрицательным');
-                return;
-            }
+    if (productData.price <= 0) {
+        alert('Цена должна быть больше 0');
+        return;
+    }
+    if (productData.stock < 0) {
+        alert('Количество на складе не может быть отрицательным');
+        return;
+    }
 
-            const fileInput = document.getElementById('productImageFile');
-            const file = fileInput.files[0];
-            
-            if (file) {
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('Файл слишком большой. Максимум 5 МБ');
-                    return;
-                }
+    const fileInput = document.getElementById('productImageFiles');
+    const files = fileInput.files;
+    let productId;
+
+    try {
+        // 1. Сначала сохраняем товар (чтобы получить ID)
+        let result;
+        if (currentEditId) {
+            result = await supabaseClient.from('products').update(productData).eq('id', currentEditId);
+            productId = currentEditId;
+        } else {
+            result = await supabaseClient.from('products').insert([productData]).select();
+            productId = result.data[0].id;
+        }
+
+        if (result.error) throw result.error;
+
+        // 2. Загружаем основное фото (первый файл) в Storage и обновляем image_url в products
+        if (files.length > 0) {
+            const mainFile = files[0];
+            if (mainFile.size <= 5 * 1024 * 1024 && mainFile.type.startsWith('image/')) {
+                const fileExt = mainFile.name.split('.').pop();
+                const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+                const filePath = `products/${fileName}`;
                 
-                if (!file.type.startsWith('image/')) {
-                    alert('Можно загружать только изображения');
-                    return;
-                }
+                const { error: uploadError } = await supabaseClient.storage
+                    .from('product-images')
+                    .upload(filePath, mainFile);
                 
-                try {
-                    const fileExt = file.name.split('.').pop();
-                    const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-                    const filePath = `products/${fileName}`;
-                    
-                    const { data: uploadData, error: uploadError } = await supabaseClient.storage
-                        .from('product-images')
-                        .upload(filePath, file);
-                    
-                    if (uploadError) throw uploadError;
-                    
+                if (!uploadError) {
                     const { data: urlData } = supabaseClient.storage
                         .from('product-images')
                         .getPublicUrl(filePath);
                     
-                    productData.image_url = urlData.publicUrl;
-                    
-                } catch (error) {
-                    console.error('Ошибка загрузки файла:', error);
-                    alert('Ошибка при загрузке изображения: ' + error.message);
-                    return;
+                    await supabaseClient.from('products').update({ image_url: urlData.publicUrl }).eq('id', productId);
                 }
             }
+        }
 
+        // 3. Загружаем дополнительные фото (со 2-го по последний) в таблицу product_images
+        for (let i = 1; i < files.length; i++) {
+            const file = files[i];
+            if (file.size > 5 * 1024 * 1024) continue;
+            if (!file.type.startsWith('image/')) continue;
+            
             try {
-                let result;
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}_${i}.${fileExt}`;
+                const filePath = `products/${fileName}`;
                 
-                if (currentEditId) {
-                    result = await supabaseClient
-                        .from('products')
-                        .update(productData)
-                        .eq('id', currentEditId);
-                } else {
-                    result = await supabaseClient
-                        .from('products')
-                        .insert([productData]);
-                }
-
-                const { error } = result;
-
-                if (error) {
-                    alert('Ошибка сохранения: ' + error.message);
-                    return;
-                }
-
-                closeModal();
-                refreshProducts();
-                showMessagePopup(currentEditId ? 'Товар обновлен' : 'Товар добавлен', 'success');
-
+                const { error: uploadError } = await supabaseClient.storage
+                    .from('product-images')
+                    .upload(filePath, file);
+                
+                if (uploadError) throw uploadError;
+                
+                const { data: urlData } = supabaseClient.storage
+                    .from('product-images')
+                    .getPublicUrl(filePath);
+                
+                await supabaseClient.from('product_images').insert([{
+                    product_id: productId,
+                    image_url: urlData.publicUrl,
+                    display_order: i
+                }]);
+                
             } catch (error) {
-                console.error('Exception in save:', error);
-                alert('Ошибка при сохранении: ' + error.message);
+                console.error('Ошибка загрузки дополнительного фото:', error);
             }
-        });
+        }
+
+        closeModal();
+        refreshProducts();
+        showMessagePopup(currentEditId ? 'Товар обновлен' : 'Товар добавлен', 'success');
+
+    } catch (error) {
+        console.error('Exception in save:', error);
+        alert('Ошибка при сохранении: ' + error.message);
+    }
+});
         
         async function deleteProduct(id) {
             if (!confirm('Вы уверены, что хотите удалить этот товар?')) return;
