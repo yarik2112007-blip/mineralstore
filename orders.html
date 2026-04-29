@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MineralStore - Мои заказы</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .orders-container {
+            width: 1000px;
+            max-width: 95%;
+            margin: 20px auto;
+            background: #40E0D0;
+            border-radius: 20px;
+            border: 4px solid #9614c9;
+            padding: 20px;
+        }
+        .order-card {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 5px solid #9614c9;
+        }
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .order-id { font-weight: bold; color: #9614c9; }
+        .order-date { color: #666; font-size: 14px; }
+        .order-items { margin-top: 10px; padding-left: 20px; }
+        .order-item { margin: 5px 0; }
+        .order-total { margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; font-weight: bold; text-align: right; }
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 25px;
+            background: #9614c9;
+            color: white;
+            border: 2px solid white;
+            border-radius: 25px;
+            text-decoration: none;
+        }
+        .back-btn:hover { background: #40E0D0; }
+    </style>
+</head>
+<body>
+    <div class="orders-container">
+        <a href="dashboard.html" class="back-btn">← Назад в личный кабинет</a>
+        <h2 class="auth-title" style="position: static; margin: 20px 0; text-align: center;">Мои заказы</h2>
+        <div id="ordersList" style="max-height: 500px; overflow-y: auto;">
+            <div class="loading">Загрузка заказов...</div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        async function loadOrders() {
+            const container = document.getElementById('ordersList');
+            
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) {
+                window.location.href = 'vhod.html';
+                return;
+            }
+            
+            const { data, error } = await supabaseClient
+                .from('orders')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false });
+                
+            if (error) {
+                container.innerHTML = '<div class="loading" style="color: red;">Ошибка загрузки</div>';
+                return;
+            }
+            
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div class="loading">У вас пока нет заказов</div>';
+                return;
+            }
+            
+            container.innerHTML = data.map(order => {
+                let items = [];
+                try {
+                    items = typeof order.items === 'string' ? JSON.parse(order.items) : (order.items || []);
+                } catch(e) { items = []; }
+                
+                return `
+                    <div class="order-card">
+                        <div class="order-header">
+                            <span class="order-id">Заказ №${order.id}</span>
+                            <span class="order-date">${new Date(order.created_at).toLocaleString()}</span>
+                        </div>
+                        <div class="order-items">
+                            ${items.map(item => `
+                                <div class="order-item">${item.name} x${item.quantity} = ${item.price * item.quantity} ₽</div>
+                            `).join('')}
+                        </div>
+                        <div class="order-total">Итого: ${order.total_amount} ₽</div>
+                        <div style="margin-top: 10px; color: #666;">Статус: ${order.status === 'pending' ? '⏳ Ожидает' : order.status === 'confirmed' ? '✅ Подтверждён' : order.status === 'delivered' ? '📦 Доставлен' : '❌ Отменён'}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        window.onload = loadOrders;
+    </script>
+</body>
+</html>
