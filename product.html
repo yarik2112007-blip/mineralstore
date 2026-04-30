@@ -303,19 +303,6 @@
             transition: 0.2s;
             z-index: 1;
         }
-        .product-thumbnails img {
-            width: 60px;
-            height: 60px;
-            object-fit: cover;
-            border-radius: 10px;
-            border: 2px solid white;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .product-thumbnails img:hover {
-            transform: scale(1.05);
-            border-color: #9614c9;
-        }
         .product-thumbnails {
             display: flex;
             gap: 10px;
@@ -379,10 +366,15 @@
     <script src="js/auth.js"></script>
     
     <script>
+
         let currentProduct = null;
         let currentProductId = null;
         let currentUser = null;
         let hasUserReviewed = false;
+        function getProductIdFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('id');
+        }
         // Загрузить дополнительные фото для галереи
         async function loadProductGallery(productId) {
             const { data, error } = await supabaseClient
@@ -394,14 +386,19 @@
             if (error || !data || data.length === 0) return;
             
             const container = document.getElementById('productThumbnails');
+            
+            //очищаем контейнер перед добавлением
+            container.innerHTML = '';
+            
             container.innerHTML = data.map(img => `
                 <img src="${img.image_url}" onclick="document.getElementById('productImage').src='${img.image_url}'">
             `).join('');
-        }
-        // Получить ID товара из URL
-        function getProductIdFromUrl() {
-            const params = new URLSearchParams(window.location.search);
-            return params.get('id');
+            
+            // Устанавливаем основное фото (первое из галереи, если нет image_url)
+            const mainImg = document.getElementById('productImage');
+            if (!mainImg.src || mainImg.src === window.location.href) {
+                mainImg.src = data[0].image_url;
+            }
         }
         
         // Загрузить товар
@@ -427,7 +424,6 @@
                 currentProduct = data;
                 displayProduct(data);
                 await loadProductGallery(currentProductId);
-                await loadProductGallery(currentProductId);
                 await loadReviews();
                 await checkUserReview();
                 
@@ -450,21 +446,6 @@
             } else {
                 img.src = 'https://via.placeholder.com/250x250?text=Mineral';
             }
-        }
-        // Загрузить дополнительные фото для галереи
-        async function loadProductGallery(productId) {
-            const { data, error } = await supabaseClient
-                .from('product_images')
-                .select('*')
-                .eq('product_id', productId)
-                .order('display_order');
-            
-            if (error || !data || data.length === 0) return;
-            
-            const container = document.getElementById('productThumbnails');
-            container.innerHTML = data.map(img => `
-                <img src="${img.image_url}" onclick="document.getElementById('productImage').src='${img.image_url}'">
-            `).join('');
         }
         // Добавить текущий товар в корзину
         function addCurrentToCart() {
