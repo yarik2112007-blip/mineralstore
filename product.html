@@ -376,6 +376,8 @@
             return params.get('id');
         }
         // Загрузить дополнительные фото для галереи
+        let originalMainImageUrl = '';
+
         async function loadProductGallery(productId) {
             const { data, error } = await supabaseClient
                 .from('product_images')
@@ -383,22 +385,55 @@
                 .eq('product_id', productId)
                 .order('display_order');
             
-            if (error || !data || data.length === 0) return;
-            
             const container = document.getElementById('productThumbnails');
             
-            //очищаем контейнер перед добавлением
-            container.innerHTML = '';
-            
-            container.innerHTML = data.map(img => `
-                <img src="${img.image_url}" onclick="document.getElementById('productImage').src='${img.image_url}'">
-            `).join('');
-            
-            // Устанавливаем основное фото (первое из галереи, если нет image_url)
-            const mainImg = document.getElementById('productImage');
-            if (!mainImg.src || mainImg.src === window.location.href) {
-                mainImg.src = data[0].image_url;
+            if (error || !data || data.length === 0) {
+                if (container) container.style.display = 'none';
+                return;
             }
+            
+            container.innerHTML = '';
+            container.style.display = 'flex';
+            
+            const mainImg = document.getElementById('productImage');
+            originalMainImageUrl = mainImg.src;
+            
+            // Добавляем исходное фото как первую миниатюру
+            const originalThumb = document.createElement('img');
+            originalThumb.src = originalMainImageUrl;
+            originalThumb.className = 'thumbnail-img original-thumb';
+            originalThumb.title = 'Вернуться к основному фото';
+            originalThumb.onclick = function() {
+                mainImg.src = originalMainImageUrl;
+                // Убираем выделение со всех миниатюр
+                document.querySelectorAll('.thumbnail-img').forEach(thumb => {
+                    thumb.classList.remove('active');
+                });
+                // Выделяем исходную миниатюру
+                originalThumb.classList.add('active');
+            };
+            container.appendChild(originalThumb);
+            
+            // Добавляем остальные миниатюры из галереи
+            data.forEach(img => {
+                // Пропускаем, если URL совпадает с исходным (чтобы не было дубля)
+                if (img.image_url === originalMainImageUrl) return;
+                
+                const thumb = document.createElement('img');
+                thumb.src = img.image_url;
+                thumb.className = 'thumbnail-img';
+                thumb.onclick = function() {
+                    mainImg.src = img.image_url;
+                    document.querySelectorAll('.thumbnail-img').forEach(t => {
+                        t.classList.remove('active');
+                    });
+                    thumb.classList.add('active');
+                };
+                container.appendChild(thumb);
+            });
+            
+            // По умолчанию выделяем исходную миниатюру
+            originalThumb.classList.add('active');
         }
         
         // Загрузить товар

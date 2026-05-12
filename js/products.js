@@ -37,12 +37,18 @@ async function loadAllProductsForSearch() {
 async function searchProducts() {
     const searchTerm = document.getElementById('searchInput').value.trim().toLowerCase();
     const panel = document.getElementById('productsPanel');
-    if (!searchTerm || searchTerm.trim().length === 0) {
-        const panel = document.getElementById('productsPanel');
-        panel.innerHTML = '<div class="loading">Введите текст для поиска</div>';
+    const resetBtn = document.getElementById('searchResetBtn');
+    
+    if (!searchTerm || searchTerm.length === 0) {
+        if (resetBtn) resetBtn.style.display = 'none';
+        loadProducts(currentCategory, true);
         return;
     }
+    
+    if (resetBtn) resetBtn.style.display = 'flex';
+    
     panel.innerHTML = '<div class="loading">Поиск...</div>';
+    
     const allProducts = await loadAllProductsForSearch();
     const filtered = allProducts.filter(product => {
         const nameMatch = product.name && product.name.toLowerCase().includes(searchTerm);
@@ -50,10 +56,12 @@ async function searchProducts() {
         const catMatch = product.category && product.category.toLowerCase().includes(searchTerm);
         return nameMatch || descMatch || catMatch;
     });
+    
     if (filtered.length === 0) {
         panel.innerHTML = '<div class="loading">Ничего не найдено</div>';
         return;
     }
+    
     displayProducts(filtered);
 }
 
@@ -78,7 +86,10 @@ async function loadProducts(category = 'all', reset = true) {
     currentCategory = category;
     
     try {
-        let query = supabaseClient.from('products').select('*');
+        let query = supabaseClient
+            .from('products')
+            .select('*')
+            .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
         
         if (category !== 'all') {
             query = query.eq('category', category);
@@ -88,28 +99,23 @@ async function loadProducts(category = 'all', reset = true) {
         
         if (error) throw error;
         
-        // Если данных нет
         if (!data || data.length === 0) {
-            panel.innerHTML = '<div class="loading">Нет товаров</div>';
+            if (currentPage === 0) {
+                panel.innerHTML = '<div class="loading">Нет товаров</div>';
+            }
             hasMore = false;
             isLoading = false;
             return;
         }
         
-        // Постраничная обрезка (временное решение)
-        const start = currentPage * PAGE_SIZE;
-        const end = start + PAGE_SIZE;
-        const pageData = data.slice(start, end);
-        
-        if (reset) {
-            displayProducts(pageData);
-        } else {
-            appendProducts(pageData);
+        if (data.length < PAGE_SIZE) {
+            hasMore = false;
         }
         
-        // Проверяем, есть ли ещё товары
-        if (end >= data.length) {
-            hasMore = false;
+        if (reset) {
+            displayProducts(data);
+        } else {
+            appendProducts(data);
         }
         
         currentPage++;
@@ -120,13 +126,6 @@ async function loadProducts(category = 'all', reset = true) {
     } finally {
         isLoading = false;
     }
-}
-
-function appendProducts(products) {
-    const panel = document.getElementById('productsPanel');
-    products.forEach(product => {
-        panel.innerHTML += createProductCard(product);
-    });
 }
 
 function createProductCard(product) {
@@ -172,8 +171,13 @@ function displayCategories() {
 
 function filterByCategory(category) {
     if (category === currentCategory) return;
+    
     const searchInput = document.getElementById('searchInput');
+    const resetBtn = document.getElementById('searchResetBtn');
+    
     if (searchInput) searchInput.value = '';
+    if (resetBtn) resetBtn.style.display = 'none';
+    
     currentCategory = category;
     loadProducts(category, true);
     updateActiveCategory(category);
@@ -358,7 +362,20 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
-
+function resetSearch() {
+    const searchInput = document.getElementById('searchInput');
+    const resetBtn = document.getElementById('searchResetBtn');
+    
+    if (searchInput) {
+        searchInput.value = '';
+    }
+    
+    if (resetBtn) {
+        resetBtn.style.display = 'none';
+    }
+    
+    loadProducts(currentCategory, true);
+}
 updateCartCount();
 displayCategories();
 loadProducts('all', true);

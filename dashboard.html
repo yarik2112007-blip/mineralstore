@@ -13,12 +13,13 @@
     <div class="square2">
         <div class="square2-top">
             <button class="logout-btn" onclick="logout()">Выйти</button>
-            <button class="logout-btn" onclick="location.href='orders.html'" style="background: #4CAF50;">📋 Мои заказы</button>
+            <button class="orders-btn" onclick="location.href='orders.html'">Мои заказы</button>
             <div class="menu" id="categoriesMenu">
                 <button class="category-btn active" data-category="all">Все</button>
             </div>
             <div class="search-container">
                 <input type="text" id="searchInput" class="search-input" placeholder="Поиск товаров..." onkeyup="searchProductsDebounced()">
+                <button class="search-reset-btn" id="searchResetBtn" onclick="resetSearch()" style="display: none;">✕</button>
             </div>
             <div class="support-btn" onclick="handleSupportClick()" id="supportBtn"></div>
         </div>

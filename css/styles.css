@@ -1505,3 +1505,122 @@ body {
     background: #40E0D0;
     transform: scale(1.1);
 }
+/* Новая кнопка Мои заказы - уменьшенная */
+.orders-btn {
+    padding: 6px 16px;
+    background: #4CAF50;
+    color: white;
+    border: 2px solid white;
+    border-radius: 25px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: 0.3s;
+    font-family: Snell Roundhand, cursive;
+}
+
+.orders-btn:hover {
+    background: #45a049;
+    transform: scale(1.05);
+}
+
+/* Кнопка техподдержки - исправлена сплюснутость */
+.support-btn {
+    width: 45px;
+    height: 45px;
+    background: #9614c9;
+    border: 3px solid white;
+    border-radius: 50%;
+    color: white;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(150, 20, 201, 0.3);
+    transition: 0.3s;
+    flex-shrink: 0;
+}
+
+.support-btn.user-mode {
+    background: #9614c9;
+}
+
+.support-btn.admin-mode {
+    background: #f44336;
+}
+
+.support-btn:hover {
+    transform: scale(1.1);
+    background: #40E0D0;
+}
+/* Кнопка возврата к основному фото */
+.thumbnail-img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 2px solid white;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.thumbnail-img:hover {
+    transform: scale(1.05);
+    border-color: #9614c9;
+}
+
+.thumbnail-img.active {
+    border: 3px solid #9614c9;
+    transform: scale(1.05);
+    box-shadow: 0 0 0 3px rgba(150, 20, 201, 0.3);
+}
+
+.product-thumbnails {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+/* Кнопка сброса поиска */
+.search-container {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    position: relative;
+}
+
+.search-input {
+    width: 250px;
+    padding: 10px 18px;
+    border: 3px solid #9614c9;
+    border-radius: 30px;
+    font-size: 15px;
+    background: white;
+    transition: 0.3s;
+    outline: none;
+}
+
+.search-reset-btn {
+    width: 28px;
+    height: 28px;
+    background: #f44336;
+    border: 2px solid white;
+    border-radius: 50%;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.search-reset-btn:hover {
+    background: #d32f2f;
+    transform: scale(1.05);
+}
